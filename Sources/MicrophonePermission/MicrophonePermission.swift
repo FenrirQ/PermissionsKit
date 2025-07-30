@@ -27,19 +27,19 @@ import PermissionsKit
 import Foundation
 import AVFoundation
 
-public extension Permission {
+public extension HBPermission {
     
     static var microphone: MicrophonePermission {
         return MicrophonePermission()
     }
 }
 
-public class MicrophonePermission: Permission {
+public class MicrophonePermission: HBPermission {
     
-    open override var kind: Permission.Kind { .microphone }
+    open override var kind: HBPermission.Kind { .microphone }
     open var usageDescriptionKey: String? { "NSMicrophoneUsageDescription" }
     
-    public override var status: Permission.Status {
+    public override var status: HBPermission.Status {
         #if os(iOS)
         switch  AVAudioSession.sharedInstance().recordPermission {
         case .granted: return .authorized
@@ -58,21 +58,18 @@ public class MicrophonePermission: Permission {
         #endif
     }
     
-    public override func request(completion: @escaping () -> Void) {
+    public override func request() async -> HBPermission.Status {
         #if os(iOS)
-        AVAudioSession.sharedInstance().requestRecordPermission {
-            granted in
-            DispatchQueue.main.async {
-                completion()
+        await withCheckedContinuation { continuation in
+            AVAudioSession.sharedInstance().requestRecordPermission { _ in
+                continuation.resume()
             }
         }
         #elseif os(macOS)
-        AVCaptureDevice.requestAccess(for: .audio) { _ in
-            DispatchQueue.main.async {
-                completion()
-            }
-        }
+        _ = await AVCaptureDevice.requestAccess(for: .audio)
         #endif
+        
+        return status
     }
 }
 #endif

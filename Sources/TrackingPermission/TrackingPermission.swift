@@ -27,7 +27,7 @@ import PermissionsKit
 import AppTrackingTransparency
 
 @available(iOS 14, tvOS 14, *)
-public extension Permission {
+public extension HBPermission {
 
     static var tracking: TrackingPermission {
         return TrackingPermission()
@@ -35,12 +35,12 @@ public extension Permission {
 }
 
 @available(iOS 14, tvOS 14, *)
-public class TrackingPermission: Permission {
+public class TrackingPermission: HBPermission {
     
-    open override var kind: Permission.Kind { .tracking }
+    open override var kind: HBPermission.Kind { .tracking }
     open var usageDescriptionKey: String? { "NSUserTrackingUsageDescription" }
     
-    public override var status: Permission.Status {
+    public override var status: HBPermission.Status {
         switch ATTrackingManager.trackingAuthorizationStatus {
         case .authorized: return .authorized
         case .denied: return .denied
@@ -50,12 +50,9 @@ public class TrackingPermission: Permission {
         }
     }
     
-    public override func request(completion: @escaping () -> Void) {
-        ATTrackingManager.requestTrackingAuthorization { _ in
-            DispatchQueue.main.async {
-                completion()
-            }
-        }
+    public override func request() async -> HBPermission.Status {
+        _ = await ATTrackingManager.requestTrackingAuthorization()
+        return status
     }
 }
 #endif

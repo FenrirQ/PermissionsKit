@@ -27,19 +27,19 @@ import PermissionsKit
 import Foundation
 import LocalAuthentication
 
-public extension Permission {
+public extension HBPermission {
     
     static var faceID: FaceIDPermission {
         return FaceIDPermission()
     }
 }
 
-public class FaceIDPermission: Permission {
+public class FaceIDPermission: HBPermission {
     
-    open override var kind: Permission.Kind { .faceID }
+    open override var kind: HBPermission.Kind { .faceID }
     open var usageDescriptionKey: String? { "NSFaceIDUsageDescription" }
     
-    public override var status: Permission.Status {
+    public override var status: HBPermission.Status {
         let context = LAContext()
         
         var error: NSError?
@@ -61,11 +61,14 @@ public class FaceIDPermission: Permission {
         }
     }
     
-    public override func request(completion: @escaping () -> Void) {
-        LAContext().evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: " ") { _, _ in
-            DispatchQueue.main.async {
-                completion()
-            }
+    public override func request() async -> HBPermission.Status {
+        let context = LAContext()
+        do {
+            let success = try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: " ")
+            
+            return success ? .authorized : .denied
+        } catch {
+            return .denied
         }
     }
 }

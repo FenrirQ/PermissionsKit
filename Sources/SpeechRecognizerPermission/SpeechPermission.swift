@@ -27,19 +27,19 @@ import PermissionsKit
 import Foundation
 import Speech
 
-public extension Permission {
+public extension HBPermission {
 
     static var speech: SpeechPermission {
         return SpeechPermission()
     }
 }
 
-public class SpeechPermission: Permission {
+public class SpeechPermission: HBPermission {
     
-    open override var kind: Permission.Kind { .speech }
+    open override var kind: HBPermission.Kind { .speech }
     open var usageDescriptionKey: String? { "NSSpeechRecognitionUsageDescription" }
     
-    public override var status: Permission.Status {
+    public override var status: HBPermission.Status {
         switch SFSpeechRecognizer.authorizationStatus() {
         case .authorized: return .authorized
         case .denied: return .denied
@@ -49,10 +49,10 @@ public class SpeechPermission: Permission {
         }
     }
     
-    public override func request(completion: @escaping () -> Void) {
-        SFSpeechRecognizer.requestAuthorization { status in
-            DispatchQueue.main.async {
-                completion()
+    public override func request() async -> HBPermission.Status {
+        return await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { [weak self] _ in
+                continuation.resume(returning: self?.status ?? .denied)
             }
         }
     }
